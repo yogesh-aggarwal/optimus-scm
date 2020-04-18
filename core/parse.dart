@@ -1,4 +1,5 @@
 import '../data.dart';
+import 'repo.dart';
 
 class ParseArguments extends Data {
   List<String> singleHyphenArgs;
@@ -15,7 +16,12 @@ class ParseArguments extends Data {
   }
 
   List<Function> stackCalls() {
-    print("All verified! Now stacking calls!");
+    switch (command) {
+      case "init":
+        Repository().init();
+        break;
+      default:
+    }
   }
 
   void checkParameters() {

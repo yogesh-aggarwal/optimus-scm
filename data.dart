@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'core/repo.dart';
+
 class Data {
   List<String> singleHyphenAllAllowed = ["a", "d", "m"];
   List<String> doubleHyphenAllAllowed = ["base"];
@@ -8,7 +13,7 @@ class Data {
 
   Map commandData = {
     "init": {
-      "singleHyphenAllowed": ["a"]
+      "singleHyphenAllowed": ["a"],
     },
     "add": {
       "singleHyphenAllowed": ["a", "d"],
@@ -17,4 +22,6 @@ class Data {
       "singleHyphenAllowed": ["a", "m"],
     },
   };
+
+  Map greetData = json.decode(File("./docs/greet.json").readAsStringSync());
 }

@@ -4,7 +4,9 @@ import '../data.dart';
 
 class Repository extends Data {
   Map init() {
-    File(configFile).createSync(recursive: true);
+    print(greetData["repo"]["initialized"]);
+
+    File("$baseDir/$configFile").createSync(recursive: true);
     return {};
   }
 }
