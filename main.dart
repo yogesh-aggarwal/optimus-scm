@@ -1,3 +1,6 @@
+import './tools.dart';
+
 main(List<String> args) {
-  print("Hey, Welcome to optimus");
+  Tools tools = Tools();
+  print(tools.seperateArgs(args));
 }
