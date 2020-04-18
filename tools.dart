@@ -5,14 +5,14 @@ class Tools extends Data {
   Map seperateArgs(List<String> args) {
     List<String> singleHyphen = [];
     List<Map> doubleHyphen = [];
-    List<String> commands = [];
+    String command;
 
     for (dynamic arg in args) {
       if (arg[0] == "-" && arg[1] == "-") {
         try {
           arg = arg.split("=");
           if (super
-              .doubleHyphenAllowed
+              .doubleHyphenAllAllowed
               .contains(arg[0].replaceFirst("--", ""))) {
             doubleHyphen
                 .add({"name": arg[0].replaceFirst("--", ""), "value": arg[1]});
@@ -24,20 +24,24 @@ class Tools extends Data {
               .add({"name": arg[0].replaceFirst("--", ""), "value": true});
         }
       } else if (arg[0] == "-") {
-        if (super.singleHyphenAllowed.contains(arg.replaceFirst("-", ""))) {
+        if (super.singleHyphenAllAllowed.contains(arg.replaceFirst("-", ""))) {
           singleHyphen.add(arg.substring(1, arg.length));
         } else {
           UnknownArgument();
         }
       } else {
-        commands.add(arg);
+        command = arg;
       }
+    }
+
+    if (command == null) {
+      throw ArgumentError("No command provided.");
     }
 
     return {
       "singleHyp": singleHyphen,
       "doubleHyp": doubleHyphen,
-      "commands": commands
+      "command": command
     };
   }
 }
