@@ -1,12 +1,28 @@
+import 'dart:convert';
 import 'dart:io';
 
 import '../data.dart';
 
+/// Handler for `init...` command
 class Repository extends Data {
   Map init() {
-    print(greetData["repo"]["initialized"]);
+    print("\n${greetData["repo"]["initialized"]}");
 
-    File("$baseDir/$configFile").createSync(recursive: true);
+    File config = File("$baseDir/$configFile");
+    config.createSync(recursive: true);
+    config.writeAsStringSync(json.encode({
+      "master": {"commits": []}  // Basic file structure
+    }));
     return {};
+  }
+
+  /// Creates .optimus directory
+  void setup() {
+    Directory(super.baseDir).createSync();
+  }
+
+  /// Checks whether it's an Optimus Repository or not.
+  bool checkRepo() {
+    return File("$baseDir/$configFile").existsSync();
   }
 }
