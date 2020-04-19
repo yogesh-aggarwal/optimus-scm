@@ -1,4 +1,5 @@
 import '../data.dart';
+import 'commit.dart';
 import 'repo.dart';
 
 class ParseArguments extends Data {
@@ -19,6 +20,9 @@ class ParseArguments extends Data {
     switch (command) {
       case "init":
         Repository().init();
+        break;
+      case "commit":
+        Commit(this.attributes);
         break;
       default:
     }
