@@ -16,7 +16,7 @@ class Commit extends Data {
 
   Commit(dynamic this.attributes) {
     // Read the commits of current branch
-    this.commits = json.decode(File("$baseDir/config.json").readAsStringSync())[
+    this.commits = json.decode(File("$baseDir/$configFile").readAsStringSync())[
             "master"] // TODO: Change master to current branch everywhere.
         ["commits"];
     // Decide whether the commit is initial or not on the basis of read `config.json` file.
@@ -40,8 +40,56 @@ class Commit extends Data {
     return File("$baseDir/indices/$x").readAsStringSync();
   }
 
-  compareFile(String path) {
-    // print("Create new commit");
+  compareFile(String newFile) {
+    Map lastCommit = json
+        .decode(File("$baseDir/$configFile").readAsStringSync())["master"]
+            ["commits"]
+        .first;
+    newFile = newFile.replaceFirst(".\\", "");
+
+    try {
+      List<String> newFileRead = File(newFile).readAsLinesSync();
+
+      List files = lastCommit["files"][newFile] ?? [];
+
+      Map<String, String> lineMap = {};
+
+      for (dynamic file in files) {
+        List<String> fileReadLines =
+            File("$baseDir/indices/$file").readAsLinesSync();
+
+        fileReadLines.asMap().forEach((int index, String line) {
+          lineMap[line] = "$file/\\\\$index";
+        });
+      }
+
+      // Whether the new file containing all the new stuff created or not
+      bool isNewFileCreated = false;
+      // The line no. to which the new line to be appended
+      int newFileLineNo = 0;
+      String _newFileCreateName;
+      List<String> commitFiles = [];
+
+      newFileRead.forEach((line) {
+        String file = lineMap[line];
+        if (file == null) {
+          if (!isNewFileCreated) {
+            _newFileCreateName = getHash(
+              "$newFile${getTimeStamp().toString()}",
+            );
+            File("$baseDir/indices/$_newFileCreateName").createSync();
+            isNewFileCreated = true;
+          }
+          File("$baseDir/indices/$_newFileCreateName")
+              .writeAsStringSync("$line\n", mode: FileMode.append);
+          commitFiles.add("$_newFileCreateName/\\\\$newFileLineNo");
+          newFileLineNo++;
+        } else {
+          commitFiles.add("$file");
+        }
+      });
+      this.commitFiles.add({newFile: {"data": commitFiles}});
+    } catch (FileSystemException) {}
   }
 
   /// Creates commit entry in the config.json file. **Only this function can do it**.
@@ -56,11 +104,11 @@ class Commit extends Data {
     }
     // Reading `config.json` to add new to existing commit.
     Map commitFileRead =
-        json.decode(File("$baseDir/config.json").readAsStringSync());
+        json.decode(File("$baseDir/$configFile").readAsStringSync());
     // Adding new commit.
     commitFileRead["master"]["commits"].add(commit);
     // Rewriting `config.json` to save the changes.
-    File("$baseDir/config.json").writeAsStringSync(json.encode(commitFileRead));
+    File("$baseDir/$configFile").writeAsStringSync(json.encode(commitFileRead));
   }
 
   /// Creates hash files in the ".optimus/indices" directory.
@@ -72,11 +120,10 @@ class Commit extends Data {
       // Check if the file is a directory.
       if (!Directory(file.path).existsSync()) {
         // Generating new file hashed name.
-        String fileName =
-            "$baseDir/indices/${getHash(file.path + getTimeStamp().toString())}";
+        String fileName = getHash(file.path + getTimeStamp().toString());
 
         // Creating the file.
-        File currentFile = File(fileName);
+        File currentFile = File("$baseDir/indices/$fileName");
         currentFile.createSync();
 
         if (currentFile.existsSync()) {
@@ -88,7 +135,7 @@ class Commit extends Data {
             // Adding a new commit to class variable (NOT config.json).
             this.commitFiles.add({
               file.path.replaceFirst(".\\", ""): {
-                "data": [fileName.replaceFirst(".optimus/indices/", "")]
+                "data": [fileName]
               }
             });
           } catch (Error) {}
@@ -97,7 +144,9 @@ class Commit extends Data {
         // If the file is a directory, the function keep calling itself recursively for depth files.
         // Traversing over files in the directory.
         for (var nestedFile in Directory(file.path).listSync()) {
-          _createCommitFiles(File(nestedFile.path)); // Calling itself.
+          _createCommitFiles(
+            File(nestedFile.path),
+          ); // Calling itself.
         }
       }
     }
@@ -123,7 +172,9 @@ class Commit extends Data {
   addCommit() {
     Directory directory = Directory("$baseDir").parent;
     directory.list(recursive: true).listen((data) {
-      if (!data.path.contains(".git") && !data.path.contains(".dart_tool")) {
+      if (!data.path.contains(".git") &&
+          !data.path.contains(".dart_tool") &&
+          !data.path.contains(".optimus")) {
         compareFile(data.path);
       }
     });

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-
 /// Data container
 class Data {
   // All the allowed single hyphened commands.
