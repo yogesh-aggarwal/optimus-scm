@@ -18,13 +18,16 @@ class Commit extends Data {
   bool initialCommit = true;
 
   Commit(dynamic this.attributes) {
-    // Read the commits of current branch
-    this.commits = json.decode(File("$baseDir/$configFile").readAsStringSync())[
-            "master"] // TODO: Change master to current branch everywhere.
-        ["commits"];
-    // Decide whether the commit is initial or not on the basis of read `config.json` file.
+    // TODO: Change master to current branch everywhere.
+    //& Read the commits of current branch.
+    this.commits = json.decode(File(
+      "$baseDir/$configFile",
+    ).readAsStringSync())["master"]["commits"];
+
+    //& Decide whether the commit is initial or not on the basis of read `config.json` file.
     this.commits.isEmpty ? this.addInitialCommit() : addCommit();
-    // After successfully loading the new commit in the class variables, create an entry in the `config.json` file.
+
+    //& After successfully loading the new commit in the class variables, create an entry in the `config.json` file.
     this.createCommitEntry();
   }
 
@@ -44,51 +47,51 @@ class Commit extends Data {
   }
 
   compareFile(String newFile) {
-    // Extracting the last commit
+    //? Extracting the last commit
     Map lastCommit = json
         .decode(File("$baseDir/$configFile").readAsStringSync())["master"]
             ["commits"]
         .last;
 
-    // Removing extra relative path denotions from current file name that is about to be compared
+    //? Removing extra relative path denotions from current file name that is about to be compared
     newFile = newFile.replaceFirst(".\\", "");
 
     try {
-      // Reads the lines of current file
+      //? Reads the lines of current file
       List<String> newFileRead = File(newFile).readAsLinesSync();
-      // Storing the hashed file names that contains the data of current file
+      //? Storing the hashed file names that contains the data of current file
       List files = lastCommit["files"][newFile] ?? [];
-      // Stores the line & the respective file name `line: fileName/\lineNumber`
+      //? Stores the line & the respective file name `line: fileName/\lineNumber`
       Map<String, String> lineMap = {};
 
-      // Iterating over each hased name file to prepare the line map
+      //? Iterating over each hased name file to prepare the line map
       for (dynamic file in files) {
-        // Extracting the attributes of the current file that is stored as `fileName/\lineNumber`
+        //? Extracting the attributes of the current file that is stored as `fileName/\lineNumber`
         List<String> fileAttr = file.split("/\\");
-        // Overiding the file(name + attributes) to file (fileName)
+        //? Overiding the file(name + attributes) to file (fileName)
         file = fileAttr[0];
 
-        // Reading the lines of current hashed file
+        //? Reading the lines of current hashed file
         List<String> fileReadLines =
             File("$baseDir/indices/$file").readAsLinesSync();
 
-        // Getting line acc. to file name of format `name/\line`
+        //? Getting line acc. to file name of format `name/\line`
         lineMap[fileReadLines[int.parse(
           fileAttr[1],
         )]] = "$file/\\${fileAttr[1]}";
       }
 
-      // Whether the new file containing all the new stuff created or not
+      //? Whether the new file containing all the new stuff created or not
       bool isNewFileCreated = false;
-      // The line no. to which the new line to be appended
+      //? The line no. to which the new line to be appended
       int newFileLineNo = 0;
       String _newFileCreateName;
       List<String> commitFiles = [];
 
       newFileRead.forEach((line) {
-        // Getting file name by line from line map
+        //? Getting file name by line from line map
         String file = lineMap[line];
-        // Checking whether the line of new file is there in our lineMap
+        //? Checking whether the line of new file is there in our lineMap
         if (file == null) {
           if (!isNewFileCreated) {
             _newFileCreateName = getHash(
@@ -102,12 +105,12 @@ class Commit extends Data {
           commitFiles.add("$_newFileCreateName/\\$newFileLineNo");
           newFileLineNo++;
         } else {
-          // Line is deleted in the new commit
-          // TODO: Add the deleted line to a new record for future log (reference)
+          //? Line is deleted in the new commit
+          //? TODO: Add the deleted line to a new record for future log (reference)
           commitFiles.add("$file");
         }
       });
-      // Appending the commit file to this.commitFiles (global commit holder/variable)
+      //? Appending the commit file to this.commitFiles (global commit holder/variable)
       this.commitFiles.add({
         newFile: {"data": commitFiles}
       });
