@@ -137,9 +137,7 @@ class Commit extends Data {
     List<FileSystemEntity> files = directory.listSync(recursive: true);
 
     for (var data in files) {
-      if (!data.path.contains(".git") &&
-          !data.path.contains(".dart_tool") &&
-          !data.path.contains(".optimus")) {
+      if (repo.isIgnored(data.path)) {
         //? Compare object
         Compare compare = Compare(data.path);
         //? Appending the commit file to this.commitFiles (global commit holder/variable)
@@ -235,12 +233,15 @@ class Compare extends Data {
         //? Incrementing the line no. to append to next line in the next round of line verification
         changedFileLineNo++;
       } else {
+        //? Line exists previous record, appending it to commitFiles
         commitFiles.add(lineMap[line]);
       }
     });
     if (commitFiles.isEmpty) {
+      //? The commit file is a directory
       return false;
     } else {
+      //? The commit file is not a directory, it's a file
       return {
         changedFile: {"data": commitFiles}
       };
