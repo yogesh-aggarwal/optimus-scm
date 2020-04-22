@@ -143,7 +143,12 @@ class Commit extends Data {
         //? Compare object
         Compare compare = Compare(data.path);
         //? Appending the commit file to this.commitFiles (global commit holder/variable)
-        this.commitFiles.add(compare.compareAndPrepareCommitFiles());
+        dynamic commitFile = compare.compareAndPrepareCommitFiles();
+
+        //? Verify that it's a file not directory. In case of directory, it will return false.
+        if (commitFile is Map) {
+          this.commitFiles.add(commitFile);
+        }
       }
     }
   }
@@ -153,17 +158,19 @@ class Compare extends Data {
   // Stores new(current) file name
   String changedFile;
   // Stores lines of new(changed) file
-  List<String> changedFileLines;
+  List<String> changedFileLines = [];
   // Stores the line & the respective file name `line: fileName/\lineNumber`
   Map<String, String> lineMap = {};
 
   Compare(String this.changedFile) {
+    //? Removing extra relative path denotions from current file name that is about to be compared
+    this.changedFile = this.changedFile.replaceFirst(".\\", "");
     //? Prepare the lineMap
     this.prepareLineMap();
   }
 
   /// Prepares lineMap of the file in format {"line": "fileName/\lineNumber"}
-  void prepareLineMap() {
+  prepareLineMap() {
     //? Extracting the last commit
     Map lastCommit = json
         .decode(File("$baseDir/$configFile").readAsStringSync())["master"]
@@ -171,8 +178,13 @@ class Compare extends Data {
         .last;
     //? Storing the hashed file names that contains the data of current file
     List hashedFiles = lastCommit["files"][changedFile] ?? [];
-    //? Reads the lines of current file
-    changedFileLines = File(this.changedFile).readAsLinesSync();
+
+    try {
+      //? Reads the lines of current file
+      changedFileLines = File(this.changedFile).readAsLinesSync();
+    } catch (Error) {
+      return false;
+    }
 
     //? Iterating over each hased name file to prepare the line map
     for (dynamic file in hashedFiles) {
@@ -190,12 +202,10 @@ class Compare extends Data {
         fileAttr[1],
       )]] = "$file/\\${fileAttr[1]}";
     }
-    //? Removing extra relative path denotions from current file name that is about to be compared
-    this.changedFile = this.changedFile.replaceFirst(".\\", "");
   }
 
   /// Compare the existing files & prepares the new commit files
-  Map compareAndPrepareCommitFiles() {
+  dynamic compareAndPrepareCommitFiles() {
     //? Whether the changed file containing all the new stuff created or not
     bool ischangedFileCreated = false;
     //? The line no. to which the new line to be appended
@@ -224,11 +234,16 @@ class Compare extends Data {
         commitFiles.add("$_newHashFileCreateName/\\$changedFileLineNo");
         //? Incrementing the line no. to append to next line in the next round of line verification
         changedFileLineNo++;
+      } else {
+        commitFiles.add(lineMap[line]);
       }
     });
-
-    return {
-      changedFile: {"data": commitFiles}
-    };
+    if (commitFiles.isEmpty) {
+      return false;
+    } else {
+      return {
+        changedFile: {"data": commitFiles}
+      };
+    }
   }
 }

@@ -28,8 +28,8 @@ class Repository extends Data {
 
   /// Checks whether the provided file is ignored or not
   bool isIgnored(String name) {
-    if (name.contains(".git") &&
-        name.contains(".dart_tool") &&
+    if (name.contains(".git") ||
+        name.contains(".dart_tool") ||
         name.contains(".optimus")) return true;
     else {
       return false;
