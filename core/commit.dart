@@ -142,8 +142,6 @@ class Commit extends Data {
           !data.path.contains(".optimus")) {
         //? Compare object
         Compare compare = Compare(data.path);
-        //? Prepare the lineMap
-        compare.prepareLineMap();
         //? Appending the commit file to this.commitFiles (global commit holder/variable)
         this.commitFiles.add(compare.compareAndPrepareCommitFiles());
       }
@@ -159,7 +157,10 @@ class Compare extends Data {
   // Stores the line & the respective file name `line: fileName/\lineNumber`
   Map<String, String> lineMap = {};
 
-  Compare(String this.changedFile);
+  Compare(String this.changedFile) {
+    //? Prepare the lineMap
+    this.prepareLineMap();
+  }
 
   /// Prepares lineMap of the file in format {"line": "fileName/\lineNumber"}
   void prepareLineMap() {

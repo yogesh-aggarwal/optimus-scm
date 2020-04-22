@@ -26,6 +26,7 @@ class Repository extends Data {
     return File("$baseDir/$configFile").existsSync();
   }
 
+  /// Checks whether the provided file is ignored or not
   bool isIgnored(String name) {
     if (name.contains(".git") &&
         name.contains(".dart_tool") &&
