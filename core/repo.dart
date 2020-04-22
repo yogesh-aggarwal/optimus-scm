@@ -11,7 +11,7 @@ class Repository extends Data {
     File config = File("$baseDir/$configFile");
     config.createSync(recursive: true);
     config.writeAsStringSync(json.encode({
-      "master": {"commits": []}  // Basic file structure
+      "master": {"commits": []} // Basic file structure
     }));
     return {};
   }
@@ -24,5 +24,14 @@ class Repository extends Data {
   /// Checks whether it's an Optimus Repository or not.
   bool checkRepo() {
     return File("$baseDir/$configFile").existsSync();
+  }
+
+  bool isIgnored(String name) {
+    if (name.contains(".git") &&
+        name.contains(".dart_tool") &&
+        name.contains(".optimus")) return true;
+    else {
+      return false;
+    }
   }
 }
