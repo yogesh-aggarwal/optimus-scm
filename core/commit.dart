@@ -137,7 +137,7 @@ class Commit extends Data {
     List<FileSystemEntity> files = directory.listSync(recursive: true);
 
     for (var data in files) {
-      if (repo.isIgnored(data.path)) {
+      if (!repo.isIgnored(data.path)) {
         //? Compare object
         Compare compare = Compare(data.path);
         //? Appending the commit file to this.commitFiles (global commit holder/variable)
