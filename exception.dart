@@ -4,9 +4,3 @@ class UnknownArgument {
     throw UnsupportedError(msg);
   }
 }
-
-class InitialCommit {
-  InitialCommit([dynamic msg = "No previous commits."]) {
-    throw UnsupportedError(msg);
-  }
-}

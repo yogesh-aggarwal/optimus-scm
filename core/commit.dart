@@ -5,7 +5,6 @@ import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 
 import '../data.dart';
-import '../exception.dart';
 
 /// Handler for `commit` command
 class Commit extends Data {
@@ -224,4 +223,3 @@ class Commit extends Data {
     }
   }
 }
-  
