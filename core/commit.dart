@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 
 import '../data.dart';
@@ -44,23 +45,37 @@ class Commit extends Data {
     Map lastCommit = json
         .decode(File("$baseDir/$configFile").readAsStringSync())["master"]
             ["commits"]
-        .first;
+        .last;
     newFile = newFile.replaceFirst(".\\", "");
 
     try {
       List<String> newFileRead = File(newFile).readAsLinesSync();
-
       List files = lastCommit["files"][newFile] ?? [];
-
       Map<String, String> lineMap = {};
 
       for (dynamic file in files) {
+        List<String> fileAttr = file.split("/\\");
+        file = fileAttr[0];
+
         List<String> fileReadLines =
             File("$baseDir/indices/$file").readAsLinesSync();
 
-        fileReadLines.asMap().forEach((int index, String line) {
-          lineMap[line] = "$file/\\\\$index";
-        });
+        // Shorting acc. to line value
+        if (fileAttr.length == 2) {
+          // Getting line acc. to file name of format `name/\line`
+          lineMap[fileReadLines[int.parse(fileAttr[1])]] =
+              "$file/\\${fileAttr[1]}";
+        } else {
+          // There's only one single file (in case of initial commit)
+          for (dynamic file in files) {
+            List<String> fileReadLines =
+                File("$baseDir/indices/$file").readAsLinesSync();
+
+            fileReadLines.asMap().forEach((int index, String line) {
+              lineMap[line] = "$file/\\$index";
+            });
+          }
+        }
       }
 
       // Whether the new file containing all the new stuff created or not
@@ -72,6 +87,7 @@ class Commit extends Data {
 
       newFileRead.forEach((line) {
         String file = lineMap[line];
+        // Checking whether the line of new file is there in our prepared hash map of previous commit
         if (file == null) {
           if (!isNewFileCreated) {
             _newFileCreateName = getHash(
@@ -82,13 +98,17 @@ class Commit extends Data {
           }
           File("$baseDir/indices/$_newFileCreateName")
               .writeAsStringSync("$line\n", mode: FileMode.append);
-          commitFiles.add("$_newFileCreateName/\\\\$newFileLineNo");
+          commitFiles.add("$_newFileCreateName/\\$newFileLineNo");
           newFileLineNo++;
         } else {
+          // Line is deleted in the new commit
+          // TODO: Add the deleted line to a new record for future log (reference)
           commitFiles.add("$file");
         }
       });
-      this.commitFiles.add({newFile: {"data": commitFiles}});
+      this.commitFiles.add({
+        newFile: {"data": commitFiles}
+      });
     } catch (FileSystemException) {}
   }
 
@@ -105,10 +125,20 @@ class Commit extends Data {
     // Reading `config.json` to add new to existing commit.
     Map commitFileRead =
         json.decode(File("$baseDir/$configFile").readAsStringSync());
-    // Adding new commit.
-    commitFileRead["master"]["commits"].add(commit);
-    // Rewriting `config.json` to save the changes.
-    File("$baseDir/$configFile").writeAsStringSync(json.encode(commitFileRead));
+    Function deepEqualityCheck = const DeepCollectionEquality().equals;
+
+    if (!deepEqualityCheck(
+      commitFileRead["master"]["commits"].last["files"],
+      commit["files"],
+    )) {
+      print("NEW");
+
+      // Adding new commit.
+      commitFileRead["master"]["commits"].add(commit);
+      // Rewriting `config.json` to save the changes.
+      File("$baseDir/$configFile")
+          .writeAsStringSync(json.encode(commitFileRead));
+    }
   }
 
   /// Creates hash files in the ".optimus/indices" directory.
@@ -171,12 +201,14 @@ class Commit extends Data {
   /// Adds new commit to class variables
   addCommit() {
     Directory directory = Directory("$baseDir").parent;
-    directory.list(recursive: true).listen((data) {
+    List<FileSystemEntity> files = directory.listSync(recursive: true);
+
+    for (var data in files) {
       if (!data.path.contains(".git") &&
           !data.path.contains(".dart_tool") &&
           !data.path.contains(".optimus")) {
         compareFile(data.path);
       }
-    });
+    }
   }
 }

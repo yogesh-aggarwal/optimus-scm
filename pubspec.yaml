@@ -6,6 +6,7 @@ environment:
 
 dependencies:
   crypto: ^2.1.4
+  collection: any
 
 dev_dependencies:
   test: ^1.0.0
