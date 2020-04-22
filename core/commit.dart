@@ -8,12 +8,14 @@ import '../data.dart';
 
 /// Handler for `commit` command
 class Commit extends Data {
-  List commits; // Stores fetched commits from the file.
-  dynamic attributes; // For storing command variables like `-a` etc.
-  List<Map> commitFiles =
-      []; // For storing file names & their data for the upcoming commit entry.
-
-  bool initialCommit = true; // Whether it's the first commit or not.
+  // Stores fetched commits from the file.
+  List commits;
+  // For storing command variables like `-a` etc.
+  dynamic attributes;
+  // For storing file names & their data for the upcoming commit entry.
+  List<Map> commitFiles = [];
+  // Whether it's the first commit or not.
+  bool initialCommit = true;
 
   Commit(dynamic this.attributes) {
     // Read the commits of current branch
@@ -42,39 +44,38 @@ class Commit extends Data {
   }
 
   compareFile(String newFile) {
+    // Extracting the last commit
     Map lastCommit = json
         .decode(File("$baseDir/$configFile").readAsStringSync())["master"]
             ["commits"]
         .last;
 
+    // Removing extra relative path denotions from current file name that is about to be compared
     newFile = newFile.replaceFirst(".\\", "");
 
     try {
+      // Reads the lines of current file
       List<String> newFileRead = File(newFile).readAsLinesSync();
+      // Storing the hashed file names that contains the data of current file
       List files = lastCommit["files"][newFile] ?? [];
+      // Stores the line & the respective file name `line: fileName/\lineNumber`
       Map<String, String> lineMap = {};
 
+      // Iterating over each hased name file to prepare the line map
       for (dynamic file in files) {
+        // Extracting the attributes of the current file that is stored as `fileName/\lineNumber`
         List<String> fileAttr = file.split("/\\");
+        // Overiding the file(name + attributes) to file (fileName)
         file = fileAttr[0];
 
+        // Reading the lines of current hashed file
         List<String> fileReadLines =
             File("$baseDir/indices/$file").readAsLinesSync();
 
-        // Shorting acc. to line value
-        if (fileAttr.length == 2) {
-          // Getting line acc. to file name of format `name/\line`
-          lineMap[fileReadLines[int.parse(fileAttr[1])]] =
-              "$file/\\${fileAttr[1]}";
-        } else {
-          // There's only one single file (in case of initial commit)
-          List<String> fileReadLines =
-              File("$baseDir/indices/$file").readAsLinesSync();
-
-          fileReadLines.asMap().forEach((int index, String line) {
-            lineMap[line] = "$file/\\$index";
-          });
-        }
+        // Getting line acc. to file name of format `name/\line`
+        lineMap[fileReadLines[int.parse(
+          fileAttr[1],
+        )]] = "$file/\\${fileAttr[1]}";
       }
 
       // Whether the new file containing all the new stuff created or not
@@ -85,8 +86,9 @@ class Commit extends Data {
       List<String> commitFiles = [];
 
       newFileRead.forEach((line) {
+        // Getting file name by line from line map
         String file = lineMap[line];
-        // Checking whether the line of new file is there in our prepared hash map of previous commit
+        // Checking whether the line of new file is there in our lineMap
         if (file == null) {
           if (!isNewFileCreated) {
             _newFileCreateName = getHash(
@@ -105,6 +107,7 @@ class Commit extends Data {
           commitFiles.add("$file");
         }
       });
+      // Appending the commit file to this.commitFiles (global commit holder/variable)
       this.commitFiles.add({
         newFile: {"data": commitFiles}
       });
