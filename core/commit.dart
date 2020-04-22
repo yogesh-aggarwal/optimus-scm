@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 
 import '../data.dart';
+import '../exception.dart';
 
 /// Handler for `commit` command
 class Commit extends Data {
@@ -21,7 +22,7 @@ class Commit extends Data {
             "master"] // TODO: Change master to current branch everywhere.
         ["commits"];
     // Decide whether the commit is initial or not on the basis of read `config.json` file.
-    this.commits.isEmpty ? addInitialCommit() : addCommit();
+    this.commits.isEmpty ? this.addInitialCommit() : addCommit();
     // After successfully loading the new commit in the class variables, create an entry in the `config.json` file.
     this.createCommitEntry();
   }
@@ -46,6 +47,7 @@ class Commit extends Data {
         .decode(File("$baseDir/$configFile").readAsStringSync())["master"]
             ["commits"]
         .last;
+
     newFile = newFile.replaceFirst(".\\", "");
 
     try {
@@ -67,14 +69,12 @@ class Commit extends Data {
               "$file/\\${fileAttr[1]}";
         } else {
           // There's only one single file (in case of initial commit)
-          for (dynamic file in files) {
-            List<String> fileReadLines =
-                File("$baseDir/indices/$file").readAsLinesSync();
+          List<String> fileReadLines =
+              File("$baseDir/indices/$file").readAsLinesSync();
 
-            fileReadLines.asMap().forEach((int index, String line) {
-              lineMap[line] = "$file/\\$index";
-            });
-          }
+          fileReadLines.asMap().forEach((int index, String line) {
+            lineMap[line] = "$file/\\$index";
+          });
         }
       }
 
@@ -127,17 +127,23 @@ class Commit extends Data {
         json.decode(File("$baseDir/$configFile").readAsStringSync());
     Function deepEqualityCheck = const DeepCollectionEquality().equals;
 
-    if (!deepEqualityCheck(
-      commitFileRead["master"]["commits"].last["files"],
-      commit["files"],
-    )) {
-      print("NEW");
-
+    _createEntry() {
       // Adding new commit.
       commitFileRead["master"]["commits"].add(commit);
       // Rewriting `config.json` to save the changes.
       File("$baseDir/$configFile")
           .writeAsStringSync(json.encode(commitFileRead));
+    }
+
+    try {
+      if (!deepEqualityCheck(
+        commitFileRead["master"]["commits"].last["files"],
+        commit["files"],
+      )) {
+        _createEntry();
+      }
+    } catch (Error) {
+      _createEntry();
     }
   }
 
@@ -163,12 +169,18 @@ class Commit extends Data {
             // Write data of the original file to "hashed" file.
             currentFile.writeAsStringSync(originalFileData);
             // Adding a new commit to class variable (NOT config.json).
+            List<String> data = [];
+
+            for (var i = 0; i < currentFile.readAsLinesSync().length; i++) {
+              data.add("$fileName/\\$i");
+            }
+
             this.commitFiles.add({
-              file.path.replaceFirst(".\\", ""): {
-                "data": [fileName]
-              }
+              file.path.replaceFirst(".\\", ""): {"data": data}
             });
-          } catch (Error) {}
+          } catch (Error) {
+            print("e");
+          }
         }
       } else {
         // If the file is a directory, the function keep calling itself recursively for depth files.
@@ -212,3 +224,4 @@ class Commit extends Data {
     }
   }
 }
+  
